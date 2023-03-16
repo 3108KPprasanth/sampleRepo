@@ -6,11 +6,10 @@ import hashlib as hl
 import base64 as b64
 import mimetypes as mt
 
-# dirPath = 'C:/Users/3108p/OneDrive/Desktop/QUBE/Project_DCP/TYPE1_TST-2D_S_EN-XX_PT-PG-13_51_2K_QCE_20210306_QCE_IOP_OV'
 dirPath = input("Enter Directory name: ")
 
-
 def GeneratePKL(filename):
+    
     PackingList = ET.Element("PackingList", attrib={'xmlns':'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
     
     ET.SubElement(PackingList,"Id").text = "urn:uuid:" + str(uuid.uuid4())
