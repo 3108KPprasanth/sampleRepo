@@ -1,4 +1,8 @@
-import os   
+import os
+from app import app
+from flask import Flask, flash, request, redirect, render_template
+from werkzeug.utils import secure_filename
+# import os   
 import xml.etree.ElementTree as ET
 import uuid
 import datetime 
@@ -6,7 +10,12 @@ import hashlib as hl
 import base64 as b64
 import mimetypes as mt
 
-dirPath = input("Enter Directory name: ")
+ALLOWED_EXTENSIONS = set(['mxf','py'])
+
+def allowed_file(filename):
+	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+dirPath = "C:/Users/3108p/OneDrive/Desktop/QUBE/SampleREpo/sampleRepo/DCP_Directory"
 
 def GeneratePKL(filename):
     
@@ -52,8 +61,8 @@ def GeneratePKL(filename):
                 else:
                     Type.text = str(mt.guess_type(file)[0]) + ";asdcpKind=" + Dcpkind
             
-            tree2 = ET.ElementTree(PackingList)
-            ET.indent(tree2, space="\t", level=0)
+    tree2 = ET.ElementTree(PackingList)
+    ET.indent(tree2, space="\t", level=0)
             
     tree2.write(os.path.join(dirPath,filename), encoding='utf-8', xml_declaration=True)
                 
@@ -114,15 +123,34 @@ def GenerateAsset(filename,name):
                     path = path.replace(' ','')
                 ET.SubElement(Chunk, "Path").text = path
             
-            tree1 = ET.ElementTree(AssetMap)
-            ET.indent(tree1, space="\t", level=0)
+    tree1 = ET.ElementTree(AssetMap)
+    ET.indent(tree1, space="\t", level=0)
             
     tree1.write(os.path.join(dirPath,filename), encoding='utf-8', xml_declaration=True)
-                
+    
+@app.route('/')
+def upload_form():
+	return render_template('index.html')
+
+@app.route('/', methods=['POST'])
+def upload_file():
+     if request.method == 'POST':
+          # check if the post request has the files part
+          if 'files[]' not in request.files:
+               flash('No file part')
+               return redirect(request.url)
+          files = request.files.getlist('files[]')
+          for file in files:
+               if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+          name = dirPath[::-1]
+          name = name[:(name.find("/"))][::-1]+ ".pkl.xml"
+          # print(name)
+          GeneratePKL(name)
+          GenerateAsset("ASSETMAP",name)
+          flash('File(s) successfully uploaded')
+          return redirect('/')
+
 if __name__ == "__main__":
-    name = dirPath[::-1]
-    name = name[:(name.find("/"))][::-1]+ ".pkl.xml"
-    GeneratePKL(name)
-    GenerateAsset("ASSETMAP",name)
-    
-    
+    app.run()
