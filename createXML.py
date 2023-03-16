@@ -15,7 +15,7 @@ def GeneratePKL(filename):
     
     ET.SubElement(PackingList,"Id").text = "urn:uuid:" + str(uuid.uuid4())
     ET.SubElement(PackingList,"AnnotationText").text = filename.rsplit('.')[0]
-    ET.SubElement(PackingList,"IssueDate").text = datetime.datetime.utcnow().isoformat(timespec="seconds") + "+00.00"
+    ET.SubElement(PackingList,"IssueDate").text = str(datetime.datetime.utcnow().isoformat(timespec="seconds")+"+00:00")
     ET.SubElement(PackingList, "Issuer").text = "Prasanth"
     ET.SubElement(PackingList, "Creator").text = "Qube wire"
     AssetList = ET.SubElement(PackingList, "AssetList")
@@ -69,7 +69,7 @@ def GenerateAsset(filename,name):
     ET.SubElement(AssetMap,"AnnotationText").text = "Assets of " + filename.rsplit('.')[0]  # name instead of filename.
     ET.SubElement(AssetMap, "Creator").text = "Qube wire"
     ET.SubElement(AssetMap, "VolumeCount").text  = str(1)
-    ET.SubElement(AssetMap,"IssueDate").text = datetime.datetime.utcnow().isoformat(timespec="seconds") + "+00.00"
+    ET.SubElement(AssetMap,"IssueDate").text = str(datetime.datetime.utcnow().isoformat(timespec="seconds")+"+00:00")
     ET.SubElement(AssetMap, "Issuer").text = "Prasanth"
     AssetList = ET.SubElement(AssetMap, "AssetList")
 
