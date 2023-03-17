@@ -1,8 +1,8 @@
 import os
-from app import app
-from flask import Flask, flash, request, redirect, render_template
+import flask 
+from flask import request, redirect, flash
 from werkzeug.utils import secure_filename
-# import os   
+
 import xml.etree.ElementTree as ET
 import uuid
 import datetime 
@@ -10,14 +10,15 @@ import hashlib as hl
 import base64 as b64
 import mimetypes as mt
 
+app = flask.Flask(__name__)
+app.secret_key = "secret key"
+
 ALLOWED_EXTENSIONS = set(['mxf','py'])
 
 def allowed_file(filename):
 	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-dirPath = "C:/Users/3108p/OneDrive/Desktop/QUBE/SampleREpo/sampleRepo/DCP_Directory"
-
-def GeneratePKL(filename):
+def GeneratePKL(filename, dirPath):
     
     PackingList = ET.Element("PackingList", attrib={'xmlns':'http://www.smpte-ra.org/schemas/429-8/2007/PKL'})
     
@@ -66,7 +67,7 @@ def GeneratePKL(filename):
             
     tree2.write(os.path.join(dirPath,filename), encoding='utf-8', xml_declaration=True)
                 
-def GenerateAsset(filename,name):
+def GenerateAsset(filename,name,dirPath):
     pkltree = ET.parse(dirPath+'/'+name)
     pklroot = pkltree.getroot()
     ns = {'myns':'http://www.smpte-ra.org/schemas/429-8/2007/PKL'}
@@ -127,30 +128,51 @@ def GenerateAsset(filename,name):
     ET.indent(tree1, space="\t", level=0)
             
     tree1.write(os.path.join(dirPath,filename), encoding='utf-8', xml_declaration=True)
-    
-@app.route('/')
-def upload_form():
-	return render_template('index.html')
 
-@app.route('/', methods=['POST'])
+def dir_finding(direc,file_with_dir):
+    file_wout_dir = ''
+    for i in range(0, file_with_dir.index('/')):
+        direc = direc + file_with_dir[i]
+    direc = direc + '/'
+
+    # print("make directory with this name: ",direc)
+    for i in range(file_with_dir.index('/')+1,len(file_with_dir)):
+        file_wout_dir = file_wout_dir + file_with_dir[i]
+    return direc,file_wout_dir
+    
+@app.route('/upload', methods=['GET'])
+def upload_form():
+	return flask.render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
 def upload_file():
-     if request.method == 'POST':
-          # check if the post request has the files part
-          if 'files[]' not in request.files:
-               flash('No file part')
-               return redirect(request.url)
-          files = request.files.getlist('files[]')
-          for file in files:
-               if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-          name = dirPath[::-1]
-          name = name[:(name.find("/"))][::-1]+ ".pkl.xml"
-          # print(name)
-          GeneratePKL(name)
-          GenerateAsset("ASSETMAP",name)
-          flash('File(s) successfully uploaded')
-          return redirect('/')
+    files = request.files.getlist('files[]')
+    dirPath = "C:/Users/3108p/OneDrive/Desktop/QUBE/SampleREpo/sampleRepo/"
+    dirPath = dirPath + str(request.form.get("foldername"))
+    for file in files:
+        if file and allowed_file(file.filename):
+            direc = ''
+            while '/' in file.filename:
+                direc, file.filename = dir_finding(direc,file.filename)
+            # print(file.filename)
+            direc = direc.rstrip(direc[-1])
+            if not os.path.exists(direc):
+                os.makedirs(direc)
+                # print("Created: ", direc)
+            # else:
+                # print("Already created: ", direc)
+            filename = secure_filename(file.filename)
+            app.config['UPLOAD_FOLDER'] = direc
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # print(filename)
+    
+    name = dirPath[::-1]
+    name = name[:(name.find("/"))][::-1]+ ".pkl.xml"
+    # print(name)
+    GeneratePKL(name,dirPath)
+    GenerateAsset("ASSETMAP",name,dirPath)
+    return ""
+    # return str(file)
 
 if __name__ == "__main__":
     app.run()
