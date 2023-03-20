@@ -1,6 +1,7 @@
 import os
+import zipfile
 import flask 
-from flask import request, redirect, flash
+from flask import request, redirect, flash,  send_file, send_from_directory
 from werkzeug.utils import secure_filename
 
 import xml.etree.ElementTree as ET
@@ -17,6 +18,8 @@ ALLOWED_EXTENSIONS = set(['mxf','py'])
 
 def allowed_file(filename):
 	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+dirPath = ""
 
 def GeneratePKL(filename, dirPath):
     
@@ -147,7 +150,8 @@ def upload_form():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     files = request.files.getlist('files[]')
-    dirPath = "C:/Users/3108p/OneDrive/Desktop/QUBE/SampleREpo/sampleRepo/"
+    # dirPath = "C:/Users/3108p/OneDrive/Desktop/QUBE/SampleREpo/sampleRepo/"
+    global dirPath
     dirPath = dirPath + str(request.form.get("foldername"))
     for file in files:
         if file and allowed_file(file.filename):
@@ -167,12 +171,43 @@ def upload_file():
             # print(filename)
     
     name = dirPath[::-1]
-    name = name[:(name.find("/"))][::-1]+ ".pkl.xml"
-    # print(name)
+    if "/" in dirPath:
+        name = name[:(name.find("/"))][::-1] + ".pkl.xml"
+    else:
+        name = name[::-1] + ".pkl.xml"
+    print(name)
     GeneratePKL(name,dirPath)
     GenerateAsset("ASSETMAP",name,dirPath)
-    return ""
+    return "Folder Uploaded Successfully to your Current Working Directory"
     # return str(file)
 
+@app.route('/download', methods=['GET'])
+def download_folder():
+    global dirPath
+    Path_dir = os.getcwd() + " \ " + dirPath #+ " \ "
+    Path_dir = Path_dir.replace(" ","")
+    zipfolder = zipfile.ZipFile('DCP.zip','w', compression=zipfile.ZIP_STORED)
+    for root,dirs, files in os.walk(Path_dir):
+        for file in files:
+            path = root[root.find(dirPath):] + " \ "+file
+            path = path.replace(" ","")
+            # print(path)
+            zipfolder.write(path)
+    zipfolder.close()
+    
+    return send_file('DCP.zip', mimetype = 'zip', attachment_filename = 'DCP.zip', as_attachment = True)
+
+    
 if __name__ == "__main__":
+    
     app.run()
+    
+    
+    
+# zipfolder = zipfile.ZipFile('DCP.zip','w', compression=zipfile.ZIP_STORED)
+    # for root,dirs, files in os.walk(dirPath):
+    #     for file in files:
+    #         zipfolder.write(dirPath+file)
+    # zipfolder.close()
+    
+    # return send_file('DCP.zip', mimetype = 'zip', attachment_filename = 'DCP.zip', as_attachment = True)
